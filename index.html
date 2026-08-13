@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AuraMusic Global | Multilingual Audio Suite</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f5f3ff',
+                            500: '#8b5cf6',
+                            600: '#7c3aed',
+                            700: '#6d28d9',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @media (prefers-reduced-motion: reduce) {
+            *, ::before, ::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+                scroll-behavior: auto !important;
+            }
+        }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.6); }
+        ::-webkit-scrollbar-thumb { background: rgba(51, 65, 85, 0.8); border-radius: 9999px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(71, 85, 105, 1); }
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 25px rgba(139, 92, 246, 0.3); }
+            50% { box-shadow: 0 0 45px rgba(139, 92, 246, 0.6); }
+        }
+        .album-art-glow { animation: pulse-glow 4s infinite ease-in-out; }
+        @keyframes eq-bounce {
+            0%, 100% { height: 4px; }
+            50% { height: 18px; }
+        }
+        .eq-bar-1 { animation: eq-bounce 0.8s infinite ease-in-out; }
+        .eq-bar-2 { animation: eq-bounce 0.5s infinite ease-in-out 0.2s; }
+        .eq-bar-3 { animation: eq-bounce 0.7s infinite ease-in-out 0.1s; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans antialiased selection:bg-purple-500 selection:text-white flex flex-col justify-between">
+
+    <!-- Hidden HTMLAudioElement -->
+    <audio id="audio-element" preload="metadata" crossorigin="anonymous"></audio>
+
+    <!-- Toast Notifications Container -->
+    <div id="toast-container" class="fixed bottom-6 right-6 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- Header -->
+    <header class="border-b border-slate-800/80 bg-slate-900/60 backdrop-blur-xl sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-500 flex items-center justify-center shadow-lg shadow-purple-500/30">
+                    <i class="fa-solid fa-earth-americas text-white text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg tracking-tight bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">AuraMusic Global</h1>
+                    <p class="text-xs text-slate-400">English, Hindi & Nepali Engine</p>
+                </div>
+            </div>
+            <!-- Views Navigation -->
+            <nav class="flex items-center space-x-1 sm:space-x-2 bg-slate-800/60 p-1 rounded-xl border border-slate-700/50">
+                <button onclick="switchTab('playlist')" id="tab-playlist" class="px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-medium rounded-lg transition-all bg-purple-600 text-white shadow">
+                    <i class="fa-solid fa-list-music mr-1.5"></i> Library
+                </button>
+                <button onclick="switchTab('favorites')" id="tab-favorites" class="px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-medium rounded-lg transition-all text-slate-400 hover:text-white">
+                    <i class="fa-solid fa-heart mr-1.5"></i> Favorites (<span id="fav-count">0</span>)
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Section -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full flex-grow grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        
+        <!-- LEFT COLUMN: Language Filter, Mood Filter, Search & Playlist -->
+        <section class="lg:col-span-7 xl:col-span-8 flex flex-col gap-5">
+            
+            <!-- Language Selector Tabs -->
+            <div class="flex items-center gap-2 bg-slate-900/80 p-1.5 rounded-2xl border border-slate-800 backdrop-blur-md" role="region" aria-label="Language selection">
+                <button onclick="filterLanguage('All')" id="lang-All" class="flex-1 py-2 text-xs sm:text-sm font-bold rounded-xl transition-all bg-purple-600 text-white shadow">All Languages</button>
+                <button onclick="filterLanguage('English')" id="lang-English" class="flex-1 py-2 text-xs sm:text-sm font-bold rounded-xl transition-all text-slate-400 hover:text-white">🇬🇧 English</button>
+                <button onclick="filterLanguage('Hindi')" id="lang-Hindi" class="flex-1 py-2 text-xs sm:text-sm font-bold rounded-xl transition-all text-slate-400 hover:text-white">🇮🇳 Hindi</button>
+                <button onclick="filterLanguage('Nepali')" id="lang-Nepali" class="flex-1 py-2 text-xs sm:text-sm font-bold rounded-xl transition-all text-slate-400 hover:text-white">🇳🇵 Nepali</button>
+            </div>
+
+            <!-- Search & Mood Filters Bar -->
+            <div class="flex flex-col sm:flex-row gap-3 items-center justify-between bg-slate-900/50 p-4 rounded-2xl border border-slate-800/80 backdrop-blur-md">
+                <div class="relative w-full sm:w-64">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400">
+                        <i class="fa-solid fa-magnifying-glass text-sm"></i>
+                    </span>
+                    <input type="text" id="search-input" oninput="handleSearch(event)" placeholder="Search songs or artists..." 
+                        class="w-full pl-10 pr-4 py-2 bg-slate-950/70 border border-slate-800 rounded-xl text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-purple-500 transition-all"
+                        aria-label="Search tracks">
+                </div>
+                <!-- Mood Filter Pills -->
+                <div class="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0 scrollbar-none" id="mood-filters">
+                    <!-- Populated via JS -->
+                </div>
+            </div>
+
+            <!-- Playlist Table Container -->
+            <div class="bg-slate-900/40 border border-slate-800/80 rounded-2xl backdrop-blur-md overflow-hidden flex flex-col shadow-xl">
+                <div class="px-5 py-3.5 border-b border-slate-800/80 flex items-center justify-between text-xs text-slate-400 font-medium uppercase tracking-wider">
+                    <div class="flex items-center gap-4">
+                        <span class="w-6 text-center">#</span>
+                        <span>Track Information</span>
+                    </div>
+                    <div class="flex items-center gap-6">
+                        <span class="hidden md:inline">Language & Mood</span>
+                        <span><i class="fa-regular fa-clock"></i></span>
+                        <span class="w-8"></span>
+                    </div>
+                </div>
+
+                <div id="playlist-container" class="divide-y divide-slate-800/40 max-h-[500px] overflow-y-auto">
+                    <!-- Rows injected dynamically -->
+                </div>
+
+                <!-- Empty State -->
+                <div id="empty-state" class="hidden flex flex-col items-center justify-center py-16 px-4 text-center">
+                    <div class="w-16 h-16 rounded-full bg-slate-800/50 flex items-center justify-center text-slate-500 text-2xl mb-4">
+                        <i class="fa-solid fa-music-slash"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold text-slate-300 mb-1">No tracks found</h3>
+                    <p class="text-sm text-slate-500 max-w-sm">No songs match your chosen language and mood filter criteria.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- RIGHT COLUMN: Audio Player Hero -->
+        <section class="lg:col-span-5 xl:col-span-4 flex flex-col gap-5">
+            <div class="bg-gradient-to-b from-slate-900/80 to-slate-900/40 border border-slate-800/80 rounded-3xl p-6 backdrop-blur-xl shadow-2xl relative overflow-hidden flex flex-col">
+                <div class="absolute -top-24 -right-24 w-64 h-64 bg-purple-600/10 rounded-full blur-3xl pointer-events-none"></div>
+
+                <div class="flex items-center justify-between mb-6 relative z-10">
+                    <div class="flex items-center gap-2">
+                        <span class="text-[10px] uppercase tracking-widest font-bold text-purple-300 bg-purple-950/80 px-2.5 py-1 rounded-full border border-purple-800/50" id="current-lang-badge">English</span>
+                        <span class="text-[10px] uppercase tracking-widest font-bold text-indigo-300 bg-indigo-950/80 px-2.5 py-1 rounded-full border border-indigo-800/50" id="current-mood-badge">Lo-Fi</span>
+                    </div>
+                    <button onclick="toggleCurrentFavorite()" id="main-fav-btn" class="text-slate-400 hover:text-red-500 transition-colors p-2 rounded-full hover:bg-slate-800/50" aria-label="Favorite">
+                        <i class="fa-regular fa-heart text-lg"></i>
+                    </button>
+                </div>
+
+                <!-- Album Cover Art -->
+                <div class="relative w-full aspect-square rounded-2xl overflow-hidden shadow-2xl mb-6 album-art-glow border border-slate-700/40 group">
+                    <img id="player-cover" src="https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=800&q=80" alt="Cover art" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" loading="lazy">
+                    <div id="playing-overlay" class="absolute inset-0 bg-slate-950/40 backdrop-blur-[2px] opacity-0 transition-opacity flex items-center justify-center">
+                        <div class="flex items-end gap-1 h-6">
+                            <div class="w-1.5 bg-purple-400 rounded-full eq-bar-1"></div>
+                            <div class="w-1.5 bg-purple-400 rounded-full eq-bar-2"></div>
+                            <div class="w-1.5 bg-purple-400 rounded-full eq-bar-3"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Song Details -->
+                <div class="mb-6 text-center relative z-10">
+                    <h2 id="player-title" class="text-xl font-bold text-white truncate mb-1">Select a track</h2>
+                    <p id="player-artist" class="text-sm text-slate-400 truncate">Artist Name</p>
+                </div>
+
+                <!-- Progress Track Bar -->
+                <div class="mb-6 relative z-10">
+                    <div class="flex items-center justify-between text-xs text-slate-400 mb-2 font-mono">
+                        <span id="current-time">00:00</span>
+                        <span id="total-duration">00:00</span>
+                    </div>
+                    <div class="relative group cursor-pointer py-1" id="progress-container" onclick="seekAudio(event)">
+                        <div class="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+                            <div id="progress-bar" class="h-full bg-gradient-to-r from-purple-500 to-indigo-500 w-0 transition-all duration-100"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Main Playback Controls -->
+                <div class="flex items-center justify-between mb-6 relative z-10 px-2">
+                    <button onclick="toggleShuffle()" id="shuffle-btn" class="text-slate-400 hover:text-white transition-colors p-2 text-base" title="Shuffle">
+                        <i class="fa-solid fa-shuffle"></i>
+                    </button>
+                    <button onclick="previousSong()" class="text-slate-200 hover:text-white hover:scale-110 transition-all p-2 text-xl" title="Previous">
+                        <i class="fa-solid fa-backward-step"></i>
+                    </button>
+                    <button onclick="togglePlay()" id="play-pause-btn" class="w-14 h-14 rounded-full bg-gradient-to-tr from-purple-600 to-indigo-500 text-white flex items-center justify-center text-xl shadow-lg shadow-purple-600/40 hover:scale-105 active:scale-95 transition-all" title="Play/Pause">
+                        <i id="play-pause-icon" class="fa-solid fa-play ml-0.5"></i>
+                    </button>
+                    <button onclick="nextSong()" class="text-slate-200 hover:text-white hover:scale-110 transition-all p-2 text-xl" title="Next">
+                        <i class="fa-solid fa-forward-step"></i>
+                    </button>
+                    <button onclick="toggleRepeat()" id="repeat-btn" class="text-slate-400 hover:text-white transition-colors p-2 text-base relative" title="Repeat">
+                        <i class="fa-solid fa-repeat"></i>
+                        <span id="repeat-badge" class="absolute -top-1 -right-1 text-[9px] font-bold bg-purple-600 text-white rounded-full w-4 h-4 hidden items-center justify-center">1</span>
+                    </button>
+                </div>
+
+                <!-- Volume Slider -->
+                <div class="flex items-center gap-3 pt-4 border-t border-slate-800/60 relative z-10">
+                    <button onclick="toggleMute()" id="mute-btn" class="text-slate-400 hover:text-white transition-colors">
+                        <i id="volume-icon" class="fa-solid fa-volume-high text-sm"></i>
+                    </button>
+                    <input type="range" id="volume-slider" min="0" max="1" step="0.01" value="0.8" oninput="setVolume(this.value)" 
+                        class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-purple-500">
+                    <span id="volume-percentage" class="text-xs text-slate-500 font-mono w-8 text-right">80%</span>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-slate-800/80 bg-slate-900/40 py-4 text-center text-xs text-slate-500 mt-12">
+        <p>AuraMusic Global Engine • English, Hindi, and Nepali Multilingual Edition</p>
+    </footer>
+
+    <!-- JavaScript Application Script -->
+    <script>
+        /* ==========================================================================
+           1. MULTILINGUAL SONG REPOSITORY (Using Reliable Public Audio Streams)
+           ========================================================================== */
+        const songs = [
+            // --- ENGLISH TRACKS ---
+            {
+                id: 1, title: "Midnight Lo-Fi Study", artist: "Chillhop Session", language: "English", mood: "Lo-Fi", duration: "03:30",
+                cover: "https://images.unsplash.com/photo-1518495973542-4542c06a5843?auto=format&fit=crop&w=800&q=80",
+                audio: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"
+            },
+            {
+                id: 2, title: "Summer Beach Party", artist: "Tropical Sun", language: "English", mood: "Dancing", duration: "07:05",
+                cover: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80",
+                audio: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3"
+            },
+            {
+                id: 3, title: "Acoustic Morning Sunshine", artist: "Happy Strings", language: "English", mood: "Happy", duration: "05:43",
+                cover: "https://images.unsplash.com/photo-1525994888227-6663528f7311?auto=format&fit=crop&w=800&q=80",
+                audio: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3"
+            },
+            {
+                id: 4, title: "Rainy Window Melancholy", artist: "Solitude Notes", language: "English", mood: "Sad", duration: "05:04",
+                cover: "https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=800&q=80",
+                audio: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3"
+            },
+
+            // --- HINDI TRACKS ---
+            {
+                id: 5, title: "Desi Chai & Lo-Fi Beats", artist: "Mumbai Vibe", language: "Hindi", mood: "Lo-Fi", duration: "07:08",
+                cover: "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=800&q=80",
+                audio: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3"
+            },
+            {
+                id: 6, title: "Bollywood Dance Anthem", artist: "Desi Mix Master", language: "Hindi", mood: "Dancing", duration: "07:02",
+                cover: "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=800&q=80",
+                audio: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3"
+            },
+            {
+                id: 7, title: "Jashn-e-Bahara Feel Good", artist: "Acoustic Bollywood", language: "Hindi", mood: "Happy", duration: "07:08",
+                cover: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=800&q=80",
+                audio: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3"
+            },
+            {
+                id: 8, title: "Tujhe Bhula Diya (Sad Reprise)", artist: "Soulful Strings", language: "Hindi", mood: "Sad", duration: "06:12",
+                cover: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=800&q=80",
+                audio: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3"
+            },
+
+            // --- NEPALI TRACKS ---
+            {
+                id: 9, title: "Himalayan Lo-Fi Chill", artist: "Kathmandu Soundscape", language: "Nepali", mood: "Lo-Fi", duration: "05:11",
+                cover: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=800&q=80",
+                audio: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-9.mp3"
+            },
+            {
+                id: 10, title: "Resam Firiri Dance Mix", artist: "Folk Club Beats", language: "Nepali", mood: "Dancing", duration: "05:43",
+                cover: "https://images.unsplash.com/photo-1544735716-392fe2489ffa?auto=format&fit=crop&w=800&q=80",
+                audio: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-10.mp3"
+            },
+            {
+                id: 11, title: "Pokhara Lakeside Morning", artist: "Acoustic Nepal", language: "Nepali", mood: "Happy", duration: "03:30",
+                cover: "https://images.unsplash.com/photo-1589182373726-e4f658ab50f0?auto=format&fit=crop&w=800&q=80",
+                audio: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"
+            },
+            {
+                id: 12, title: "Pahad Ko Chiso Hawa (Sad)", artist: "Melancholic flute", language: "Nepali", mood: "Sad", duration: "07:05",
+                cover: "https://images.unsplash.com/photo-1517760444937-f6397edcbbcd?auto=format&fit=crop&w=800&q=80",
+                audio: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3"
+            }
+        ];
+
+        /* ==========================================================================
+           2. STATE MANAGEMENT
+           ========================================================================== */
+        const state = {
+            currentIndex: 0,
+            isPlaying: false,
+            isShuffle: false,
+            repeatMode: 0, // 0: off, 1: repeat single track
+            volume: parseFloat(localStorage.getItem('aura_volume')) || 0.8,
+            isMuted: false,
+            previousVolume: 0.8,
+            currentLanguage: 'All',
+            currentMood: 'All',
+            activeTab: 'playlist',
+            searchQuery: '',
+            favorites: JSON.parse(localStorage.getItem('aura_favorites')) || [1, 5, 9]
+        };
+
+        // DOM Elements
+        const audioElement = document.getElementById('audio-element');
+        const playPauseBtn = document.getElementById('play-pause-btn');
+        const playPauseIcon = document.getElementById('play-pause-icon');
+        const progressBar = document.getElementById('progress-bar');
+        const progressContainer = document.getElementById('progress-container');
+        const currentTimeEl = document.getElementById('current-time');
+        const totalDurationEl = document.getElementById('total-duration');
+        const volumeSlider = document.getElementById('volume-slider');
+        const volumeIcon = document.getElementById('volume-icon');
+        const volumePercentageEl = document.getElementById('volume-percentage');
+        const playlistContainer = document.getElementById('playlist-container');
+        const emptyStateEl = document.getElementById('empty-state');
+        const shuffleBtn = document.getElementById('shuffle-btn');
+        const repeatBtn = document.getElementById('repeat-btn');
+        const repeatBadge = document.getElementById('repeat-badge');
+        const mainFavBtn = document.getElementById('main-fav-btn');
+        const playingOverlay = document.getElementById('playing-overlay');
+
+        /* ==========================================================================
+           3. INITIALIZATION
+           ========================================================================== */
+        document.addEventListener('DOMContentLoaded', () => {
+            audioElement.volume = state.volume;
+            volumeSlider.value = state.volume;
+            updateVolumeUI(state.volume);
+
+            renderMoodFilters();
+            renderPlaylist();
+            updateFavCount();
+            loadSong(state.currentIndex);
+
+            // Listeners
+            audioElement.addEventListener('timeupdate', updateProgress);
+            audioElement.addEventListener('loadedmetadata', () => {
+                totalDurationEl.textContent = formatTime(audioElement.duration);
+            });
+            audioElement.addEventListener('ended', handleSongEnded);
+            
+            // Completely silent audio error handling (no banners or forced skips)
+            audioElement.addEventListener('error', () => {
+                pauseSong();
+            });
+        });
+
+        /* ==========================================================================
+           4. CORE PLAYBACK LOGIC
+           ========================================================================== */
+        function loadSong(index) {
+            const song = songs[index];
+            if (!song) return;
+
+            audioElement.src = song.audio;
+            document.getElementById('player-title').textContent = song.title;
+            document.getElementById('player-artist').textContent = song.artist;
+            document.getElementById('player-cover').src = song.cover;
+            document.getElementById('current-lang-badge').textContent = song.language;
+            document.getElementById('current-mood-badge').textContent = song.mood;
+            totalDurationEl.textContent = song.duration;
+
+            updateMainFavButtonState();
+            highlightActivePlaylistRow();
+        }
+
+        function togglePlay() {
+            if (audioElement.paused) {
+                playSong();
+            } else {
+                pauseSong();
+            }
+        }
+
+        function playSong() {
+            audioElement.play().then(() => {
+                state.isPlaying = true;
+                playPauseIcon.className = "fa-solid fa-pause";
+                playingOverlay.style.opacity = "1";
+            }).catch(err => {
+                console.warn("Playback blocked:", err);
+            });
+        }
+
+        function pauseSong() {
+            audioElement.pause();
+            state.isPlaying = false;
+            playPauseIcon.className = "fa-solid fa-play ml-0.5";
+            playingOverlay.style.opacity = "0";
+        }
+
+        function nextSong() {
+            const visibleSongs = getFilteredSongs();
+            if (visibleSongs.length === 0) return;
+
+            let nextIndex;
+            if (state.isShuffle) {
+                const randomSong = visibleSongs[Math.floor(Math.random() * visibleSongs.length)];
+                nextIndex = songs.findIndex(s => s.id === randomSong.id);
+            } else {
+                const currentSongId = songs[state.currentIndex].id;
+                const currentVisibleIdx = visibleSongs.findIndex(s => s.id === currentSongId);
+                if (currentVisibleIdx !== -1 && currentVisibleIdx < visibleSongs.length - 1) {
+                    nextIndex = songs.findIndex(s => s.id === visibleSongs[currentVisibleIdx + 1].id);
+                } else {
+                    nextIndex = songs.findIndex(s => s.id === visibleSongs[0].id);
+                }
+            }
+
+            state.currentIndex = nextIndex;
+            loadSong(state.currentIndex);
+            if (state.isPlaying) playSong();
+        }
+
+        function previousSong() {
+            if (audioElement.currentTime > 3) {
+                audioElement.currentTime = 0;
+                return;
+            }
+            const visibleSongs = getFilteredSongs();
+            if (visibleSongs.length === 0) return;
+
+            let prevIndex;
+            const currentSongId = songs[state.currentIndex].id;
+            const currentVisibleIdx = visibleSongs.findIndex(s => s.id === currentSongId);
+            
+            if (currentVisibleIdx > 0) {
+                prevIndex = songs.findIndex(s => s.id === visibleSongs[currentVisibleIdx - 1].id);
+            } else {
+                prevIndex = songs.findIndex(s => s.id === visibleSongs[visibleSongs.length - 1].id);
+            }
+
+            state.currentIndex = prevIndex;
+            loadSong(state.currentIndex);
+            if (state.isPlaying) playSong();
+        }
+
+        /* ==========================================================================
+           5. PROGRESS & VOLUME
+           ========================================================================== */
+        function updateProgress() {
+            if (isNaN(audioElement.duration)) return;
+            const progressPercent = (audioElement.currentTime / audioElement.duration) * 100;
+            progressBar.style.width = `${progressPercent}%`;
+            currentTimeEl.textContent = formatTime(audioElement.currentTime);
+        }
+
+        function seekAudio(event) {
+            const rect = progressContainer.getBoundingClientRect();
+            const clickPosition = (event.clientX - rect.left) / rect.width;
+            if (!isNaN(audioElement.duration)) {
+                audioElement.currentTime = clickPosition * audioElement.duration;
+            }
+        }
+
+        function setVolume(value) {
+            state.volume = parseFloat(value);
+            audioElement.volume = state.volume;
+            state.isMuted = state.volume === 0;
+            localStorage.setItem('aura_volume', state.volume);
+            updateVolumeUI(state.volume);
+        }
+
+        function toggleMute() {
+            if (state.isMuted) {
+                state.isMuted = false;
+                audioElement.volume = state.previousVolume;
+                volumeSlider.value = state.previousVolume;
+                updateVolumeUI(state.previousVolume);
+            } else {
+                state.previousVolume = audioElement.volume;
+                state.isMuted = true;
+                audioElement.volume = 0;
+                volumeSlider.value = 0;
+                updateVolumeUI(0);
+            }
+        }
+
+        function updateVolumeUI(vol) {
+            volumePercentageEl.textContent = `${Math.round(vol * 100)}%`;
+            if (vol === 0 || state.isMuted) {
+                volumeIcon.className = "fa-solid fa-volume-xmark text-sm text-red-400";
+            } else if (vol < 0.4) {
+                volumeIcon.className = "fa-solid fa-volume-low text-sm";
+            } else {
+                volumeIcon.className = "fa-solid fa-volume-high text-sm";
+            }
+        }
+
+        /* ==========================================================================
+           6. SHUFFLE, REPEAT & COMPLETION
+           ========================================================================== */
+        function toggleShuffle() {
+            state.isShuffle = !state.isShuffle;
+            if (state.isShuffle) {
+                shuffleBtn.classList.add('text-purple-400', 'bg-purple-950/40', 'rounded-lg');
+                showToast("Shuffle Enabled");
+            } else {
+                shuffleBtn.classList.remove('text-purple-400', 'bg-purple-950/40', 'rounded-lg');
+                showToast("Shuffle Disabled");
+            }
+        }
+
+        function toggleRepeat() {
+            state.repeatMode = state.repeatMode === 0 ? 1 : 0;
+            if (state.repeatMode === 1) {
+                repeatBtn.classList.add('text-purple-400', 'bg-purple-950/40', 'rounded-lg');
+                repeatBadge.textContent = "1";
+                repeatBadge.classList.remove('hidden');
+                showToast("Repeat Current Track Only");
+            } else {
+                repeatBtn.classList.remove('text-purple-400', 'bg-purple-950/40', 'rounded-lg');
+                repeatBadge.classList.add('hidden');
+                showToast("Repeat Off");
+            }
+        }
+
+        function handleSongEnded() {
+            if (state.repeatMode === 1) {
+                audioElement.currentTime = 0;
+                playSong();
+            } else {
+                pauseSong();
+                audioElement.currentTime = 0;
+            }
+        }
+
+        /* ==========================================================================
+           7. MULTILINGUAL & MOOD FILTERING LOGIC
+           ========================================================================== */
+        function switchTab(tabName) {
+            state.activeTab = tabName;
+            ['playlist', 'favorites'].forEach(t => {
+                const btn = document.getElementById(`tab-${t}`);
+                if (t === tabName) {
+                    btn.className = "px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-medium rounded-lg transition-all bg-purple-600 text-white shadow";
+                } else {
+                    btn.className = "px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-medium rounded-lg transition-all text-slate-400 hover:text-white";
+                }
+            });
+            renderPlaylist();
+        }
+
+        function filterLanguage(lang) {
+            state.currentLanguage = lang;
+            ['All', 'English', 'Hindi', 'Nepali'].forEach(l => {
+                const btn = document.getElementById(`lang-${l}`);
+                if (!btn) return;
+                if (l === lang) {
+                    btn.className = "flex-1 py-2 text-xs sm:text-sm font-bold rounded-xl transition-all bg-purple-600 text-white shadow";
+                } else {
+                    btn.className = "flex-1 py-2 text-xs sm:text-sm font-bold rounded-xl transition-all text-slate-400 hover:text-white";
+                }
+            });
+            renderPlaylist();
+        }
+
+        function filterMood(mood) {
+            state.currentMood = mood;
+            document.querySelectorAll('.mood-pill').forEach(btn => {
+                if (btn.dataset.mood === mood) {
+                    btn.className = "mood-pill px-3 py-1.5 text-xs font-semibold rounded-xl transition-all bg-indigo-600 text-white shadow shrink-0";
+                } else {
+                    btn.className = "mood-pill px-3 py-1.5 text-xs font-semibold rounded-xl transition-all bg-slate-800/80 text-slate-400 hover:text-white shrink-0";
+                }
+            });
+            renderPlaylist();
+        }
+
+        function handleSearch(e) {
+            state.searchQuery = e.target.value.toLowerCase().trim();
+            renderPlaylist();
+        }
+
+        function renderMoodFilters() {
+            const container = document.getElementById('mood-filters');
+            const moods = ['All', 'Lo-Fi', 'Dancing', 'Happy', 'Sad'];
+            
+            container.innerHTML = moods.map(m => `
+                <button onclick="filterMood('${m}')" data-mood="${m}" class="mood-pill px-3 py-1.5 text-xs font-semibold rounded-xl transition-all ${m === 'All' ? 'bg-indigo-600 text-white shadow' : 'bg-slate-800/80 text-slate-400 hover:text-white'} shrink-0">
+                    ${m}
+                </button>
+            `).join('');
+        }
+
+        function getFilteredSongs() {
+            return songs.filter(song => {
+                const matchesTab = state.activeTab === 'playlist' || state.favorites.includes(song.id);
+                const matchesLang = state.currentLanguage === 'All' || song.language === state.currentLanguage;
+                const matchesMood = state.currentMood === 'All' || song.mood === state.currentMood;
+                const matchesSearch = !state.searchQuery || 
+                    song.title.toLowerCase().includes(state.searchQuery) || 
+                    song.artist.toLowerCase().includes(state.searchQuery);
+                return matchesTab && matchesLang && matchesMood && matchesSearch;
+            });
+        }
+
+        function renderPlaylist() {
+            const visibleSongs = getFilteredSongs();
+            playlistContainer.innerHTML = '';
+
+            if (visibleSongs.length === 0) {
+                emptyStateEl.classList.remove('hidden');
+                return;
+            } else {
+                emptyStateEl.classList.add('hidden');
+            }
+
+            visibleSongs.forEach((song, idx) => {
+                const isCurrent = songs[state.currentIndex].id === song.id;
+                const isFav = state.favorites.includes(song.id);
+                const actualIndex = songs.findIndex(s => s.id === song.id);
+
+                const row = document.createElement('div');
+                row.id = `playlist-row-${actualIndex}`;
+                row.className = `px-5 py-3 flex items-center justify-between transition-colors group cursor-pointer ${isCurrent ? 'bg-purple-950/30 border-l-4 border-purple-500' : 'hover:bg-slate-800/30'}`;
+                row.onclick = () => {
+                    state.currentIndex = actualIndex;
+                    loadSong(state.currentIndex);
+                    playSong();
+                };
+
+                row.innerHTML = `
+                    <div class="flex items-center gap-4 min-w-0 flex-1">
+                        <span class="w-6 text-center text-xs font-mono ${isCurrent ? 'text-purple-400 font-bold' : 'text-slate-500'}">${idx + 1}</span>
+                        <div class="relative w-10 h-10 rounded-lg overflow-hidden shrink-0 bg-slate-800">
+                            <img src="${song.cover}" alt="" class="w-full h-full object-cover" loading="lazy">
+                            ${isCurrent && state.isPlaying ? `
+                                <div class="absolute inset-0 bg-slate-950/60 flex items-center justify-center">
+                                    <div class="flex items-end gap-0.5 h-3">
+                                        <div class="w-1 bg-purple-400 rounded-full eq-bar-1"></div>
+                                        <div class="w-1 bg-purple-400 rounded-full eq-bar-2"></div>
+                                    </div>
+                                </div>
+                            ` : ''}
+                        </div>
+                        <div class="min-w-0 flex-1 pr-4">
+                            <h4 class="text-sm font-medium truncate ${isCurrent ? 'text-purple-300 font-semibold' : 'text-slate-200 group-hover:text-white'}">${song.title}</h4>
+                            <p class="text-xs text-slate-400 truncate">${song.artist}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-6 shrink-0">
+                        <div class="hidden md:flex items-center gap-2">
+                            <span class="text-[10px] uppercase font-bold text-slate-400 bg-slate-800/80 px-2 py-0.5 rounded">${song.language}</span>
+                            <span class="text-[10px] uppercase font-bold text-slate-400 bg-slate-800/80 px-2 py-0.5 rounded">${song.mood}</span>
+                        </div>
+                        <span class="text-xs text-slate-400 font-mono">${song.duration}</span>
+                        <button onclick="event.stopPropagation(); toggleFavorite(${song.id})" class="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-slate-800 transition-colors" title="Favorite">
+                            <i class="${isFav ? 'fa-solid text-red-500' : 'fa-regular'} fa-heart"></i>
+                        </button>
+                    </div>
+                `;
+                playlistContainer.appendChild(row);
+            });
+        }
+
+        function highlightActivePlaylistRow() {
+            document.querySelectorAll('[id^="playlist-row-"]').forEach(row => {
+                row.className = row.className.replace(' bg-purple-950/30 border-l-4 border-purple-500', '');
+            });
+            const activeRow = document.getElementById(`playlist-row-${state.currentIndex}`);
+            if (activeRow) {
+                activeRow.className += ' bg-purple-950/30 border-l-4 border-purple-500';
+            }
+            renderPlaylist();
+        }
+
+        /* ==========================================================================
+           8. FAVORITES & UTILITIES
+           ========================================================================== */
+        function toggleFavorite(songId) {
+            const index = state.favorites.indexOf(songId);
+            if (index > -1) {
+                state.favorites.splice(index, 1);
+                showToast("Removed from favorites");
+            } else {
+                state.favorites.push(songId);
+                showToast("Added to favorites");
+            }
+            localStorage.setItem('aura_favorites', JSON.stringify(state.favorites));
+            updateFavCount();
+            renderPlaylist();
+            updateMainFavButtonState();
+        }
+
+        function toggleCurrentFavorite() {
+            const currentSong = songs[state.currentIndex];
+            if (currentSong) toggleFavorite(currentSong.id);
+        }
+
+        function updateMainFavButtonState() {
+            const currentSong = songs[state.currentIndex];
+            if (!currentSong) return;
+            const isFav = state.favorites.includes(currentSong.id);
+            mainFavBtn.innerHTML = `<i class="${isFav ? 'fa-solid text-red-500' : 'fa-regular'} fa-heart text-lg"></i>`;
+        }
+
+        function updateFavCount() {
+            document.getElementById('fav-count').textContent = state.favorites.length;
+        }
+
+        function formatTime(seconds) {
+            if (isNaN(seconds)) return "00:00";
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `pointer-events-auto px-4 py-2.5 rounded-xl text-xs font-medium shadow-lg backdrop-blur-md border transition-all transform translate-y-2 opacity-0 flex items-center gap-2 bg-slate-900/90 border-slate-700 text-slate-200`;
+            toast.innerHTML = `
+                <i class="fa-solid fa-circle-check text-purple-400"></i>
+                <span>${message}</span>
+            `;
+            container.appendChild(toast);
+            setTimeout(() => { toast.classList.remove('translate-y-2', 'opacity-0'); }, 10);
+            setTimeout(() => {
+                toast.classList.add('translate-y-2', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
